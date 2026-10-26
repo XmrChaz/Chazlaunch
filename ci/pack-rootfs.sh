@@ -12,6 +12,10 @@ CONFIG="$PWD/app/src/main/assets/nixos/configuration.nix"
 DIST="$PWD/dist"
 mkdir -p "$DIST"
 
+# nixos-generate resolves nixpkgs via <nixpkgs> on NIX_PATH; flakes-only Nix
+# leaves that unset, so pin it to the matching channel here.
+export NIX_PATH="nixpkgs=channel:nixos-24.11"
+
 # nixos-generators drives the eval with its own format modules + our config.
 RESULT="$(nix --extra-experimental-features 'nix-command flakes' \
     run github:nix-community/nixos-generators -- \

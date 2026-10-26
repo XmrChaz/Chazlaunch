@@ -20,10 +20,13 @@ PREFIX="$WORK/prefix"       # cross sysroot-ish install prefix (arm64)
 mkdir -p "$PREFIX" "$OUT/host-tools" "$OUT/wayland/$ABI"
 
 export PATH="$TOOLCHAIN/bin:$PATH"
-export CC="$TOOLCHAIN/bin/${TRIPLE}${API}-clang"
-export AR="$TOOLCHAIN/bin/llvm-ar"
-export RANLIB="$TOOLCHAIN/bin/llvm-ranlib"
-export STRIP="$TOOLCHAIN/bin/llvm-strip"
+# NOTE: do NOT export the cross CC/AR/... yet — step 1 builds the *host*
+# wayland-scanner and must use the host compiler. The cross toolchain is set
+# only for the arm64 steps (2 and 3) below.
+CROSS_CC="$TOOLCHAIN/bin/${TRIPLE}${API}-clang"
+CROSS_AR="$TOOLCHAIN/bin/llvm-ar"
+CROSS_RANLIB="$TOOLCHAIN/bin/llvm-ranlib"
+CROSS_STRIP="$TOOLCHAIN/bin/llvm-strip"
 
 WAYLAND_VERSION="${WAYLAND_VERSION:-1.23.0}"
 LIBFFI_VERSION="${LIBFFI_VERSION:-3.4.6}"
@@ -38,6 +41,9 @@ meson setup wl-host "wayland-${WAYLAND_VERSION}" \
     -Dscanner=true -Dlibraries=false -Ddocumentation=false -Dtests=false -Ddtd_validation=false
 ninja -C wl-host
 cp wl-host/src/wayland-scanner "$OUT/host-tools/wayland-scanner"
+
+# From here on everything is a cross build for arm64.
+export CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
 
 # --- 2. libffi for arm64 (wayland-server depends on it) -------------------
 curl -fsSL "https://github.com/libffi/libffi/releases/download/v${LIBFFI_VERSION}/libffi-${LIBFFI_VERSION}.tar.gz" -o libffi.tar.gz
