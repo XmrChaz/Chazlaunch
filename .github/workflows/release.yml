@@ -19,6 +19,10 @@ on:
       tag:
         description: "Release tag to create/attach to (e.g. v0.1.0)"
         required: true
+      skip_rootfs:
+        description: "Skip the (slow) rootfs build — use when the tarball is already attached to the release"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -67,6 +71,9 @@ jobs:
   rootfs:
     name: Build NixOS aarch64 rootfs
     runs-on: ubuntu-latest
+    # Skippable once the tarball is already attached to the release, so natives/
+    # apk fixes can be iterated without the ~20-min qemu rebuild each time.
+    if: ${{ inputs.skip_rootfs != 'true' }}
     steps:
       - uses: actions/checkout@v4
 
