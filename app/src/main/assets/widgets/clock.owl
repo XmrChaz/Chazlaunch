@@ -1,0 +1,16 @@
+meta { owl: 1 }
+
+# Clock face for the Chazlaunch home screen. Edit on-device to restyle it.
+widget "clock" {
+  page: 1
+  order: 1
+  size: 6x2
+
+  source clock = clock
+
+  Column {
+    padding: 8
+    Text { text: "${clock.time}"; style: title; color: foreground }
+    Text { text: "${clock.date}"; style: muted }
+  }
+}

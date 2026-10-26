@@ -1,0 +1,25 @@
+meta { owl: 1 }
+
+# The app drawer is itself a widget — rewrite it to change how apps are listed.
+# `apps` is a built-in source: each item has .name, .command and .icon.
+widget "drawer" {
+  page: 1
+  order: 2
+  size: 6x6
+
+  source apps = apps
+
+  Column {
+    padding: 8
+    Text { text: "Apps"; style: muted }
+    for app in apps {
+      Button {
+        fill: true
+        radius: 12
+        background: surface
+        text: "${app.icon}  ${app.name}"
+        onTap: run(app.command)
+      }
+    }
+  }
+}

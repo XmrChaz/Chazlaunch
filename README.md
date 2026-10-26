@@ -128,6 +128,21 @@ git tag v0.1.0 && git push origin v0.1.0
 | `app/src/main/assets/agents.json` | AI-agent catalog read by the install wizard |
 | `docs/` | Architecture, NDK cross file, dependency fetch helper |
 
+## Widgets (OWL)
+
+The home screen is built from **OWL** widgets — an on-device declarative widget
+language. The clock and the app drawer are each a `.owl` file under
+`app/src/main/assets/widgets/` that you can edit to restyle the launcher.
+Chazlaunch implements an independent, compatible **subset** of OWL (parser +
+reactive runtime + Compose renderer in `com.chazlaunch.owl`); see
+`app/src/main/assets/widgets/README.md` for the supported surface.
+
+## Credits
+
+- **OWL widget language** — from [OmaLauncher](https://github.com/SimonSchubert/omalauncher)
+  (`owl/`, MIT © 2026 Simon Schubert and contributors). Chazlaunch's OWL engine
+  is an independent, compatible reimplementation of a subset, not a port.
+
 ## Status & limitations
 
 This is a working architecture and a complete, buildable project skeleton; a few
