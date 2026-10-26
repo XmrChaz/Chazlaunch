@@ -53,8 +53,13 @@ object TarExtractor {
             longName = null
             longLink = null
 
-            val outFile = File(dest, fullName).safeResolve(dest) ?: run {
-                skip(input, sizeField); continue
+            // Guard against path-traversal entries; skip the whole record
+            // (content + block padding) so the stream stays aligned.
+            val outFile = File(dest, fullName).safeResolve(dest)
+            if (outFile == null) {
+                skip(input, sizeField)
+                skip(input, padding(sizeField))
+                continue
             }
             val mode = (parseOctal(header, 100, 8) and 0xFFF).toInt()
 
