@@ -105,6 +105,14 @@ class InstallManager(private val context: Context) {
         // Make sure resolv.conf points somewhere usable inside the guest.
         PRootManager.rootfs.resolve("etc/resolv.conf")
             .writeText("nameserver 1.1.1.1\nnameserver 8.8.8.8\n")
+
+        // Install the chaz-pkg package-manager helper into the guest.
+        val binDir = PRootManager.rootfs.resolve("root/.local/bin").apply { mkdirs() }
+        val chazPkg = binDir.resolve("chaz-pkg")
+        context.assets.open("scripts/chaz-pkg").use { input ->
+            chazPkg.outputStream().use { input.copyTo(it) }
+        }
+        runCatching { android.system.Os.chmod(chazPkg.absolutePath, 0b111_101_101) }
     }
 
     private fun bootstrapNix() = runGuestScript("bootstrap.sh") { line ->

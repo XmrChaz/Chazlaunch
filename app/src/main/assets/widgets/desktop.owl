@@ -1,0 +1,91 @@
+meta { owl: 2 }
+
+# Chazlaunch desktop — a dark, monospace "dev rice" home screen.
+# Status bar (prompt + clock) · app cards · dock. Edit any of it on-device.
+widget "desktop" {
+  size: 6x8
+
+  source clock = clock
+  source apps  = apps
+
+  Box {
+    grow: true
+    background: #0B0F14
+
+    Column {
+      grow: true
+      spacing: 0
+
+      # ───────────────────────── status bar ─────────────────────────
+      Row {
+        fill: true
+        background: #121821
+        padding: 14
+        spacing: 8
+        align: center
+        Text { text: "◆";        color: #5EE6C5; mono: true; bold: true }
+        Text { text: "chaz";     color: #E6EDF3; mono: true; bold: true }
+        Text { text: "~/nixos";  color: #7D8590; mono: true }
+        Spacer { weight: 1 }
+        Text { text: "${clock.time}"; color: #E6EDF3; mono: true; bold: true }
+        Text { text: "${clock.date}"; color: #7D8590; mono: true }
+      }
+
+      # ───────────────────────── main area ──────────────────────────
+      Box {
+        weight: 1
+        padding: 22
+
+        Column {
+          spacing: 16
+
+          Text { text: "// chazlaunch";  color: #5EE6C5; mono: true; fontSize: 13 }
+          Text { text: "NixOS, your way."; style: title; color: #E6EDF3 }
+          Text { text: "a wayland desktop, rootless under proot"; color: #7D8590; mono: true; fontSize: 13 }
+
+          Text { text: "APPS"; color: #7D8590; mono: true; fontSize: 11 }
+
+          Column {
+            spacing: 10
+            for app in apps {
+              Row {
+                fill: true
+                background: #121821
+                radius: 14
+                padding: 12
+                spacing: 14
+                align: center
+                onTap: run(app.command)
+                Box {
+                  width: 42
+                  height: 42
+                  radius: 11
+                  background: #1B2430
+                  align: center
+                  Text { text: "${app.icon}"; fontSize: 18 }
+                }
+                Text { text: "${app.name}"; color: #E6EDF3; weight: 1 }
+                Text { text: "↵"; color: #5EE6C5; mono: true }
+              }
+            }
+          }
+        }
+      }
+
+      # ─────────────────────────── dock ─────────────────────────────
+      Row {
+        fill: true
+        background: #121821
+        padding: 10
+        spacing: 8
+        align: center
+        Button { text: "▸ terminal"; color: #E6EDF3; mono: true; background: #1B2430; radius: 10; onTap: run("foot") }
+        Button { text: "⬇ packages"; color: #E6EDF3; mono: true; background: #1B2430; radius: 10; onTap: run("foot -e /root/.local/bin/chaz-pkg") }
+        Button { text: "⚙"; color: #E6EDF3; mono: true; background: #1B2430; radius: 10; onTap: run("@options") }
+        Spacer { weight: 1 }
+        Text { text: "●"; color: #57AB5A; fontSize: 10 }
+        Text { text: "wayland"; color: #57AB5A; mono: true; fontSize: 12 }
+      }
+    }
+  }
+}

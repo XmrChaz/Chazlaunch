@@ -1,0 +1,44 @@
+#!/bin/sh
+# chaz-pkg — a friendly Nix package manager wrapper for the Chazlaunch guest.
+# Lets you install anything from nixpkgs without learning the full nix CLI.
+#
+#   chaz-pkg                 interactive menu
+#   chaz-pkg search <term>   search nixpkgs
+#   chaz-pkg install <pkg>   install a package (e.g. chaz-pkg install firefox)
+#   chaz-pkg remove <pkg>    remove a package
+#   chaz-pkg list            list installed packages
+#   chaz-pkg upgrade         upgrade everything
+set -u
+
+export NIX_CONFIG="experimental-features = nix-command flakes"
+export PATH="/root/.nix-profile/bin:/run/current-system/sw/bin:/root/.local/bin:$PATH"
+
+menu() {
+    while true; do
+        printf '\n\033[36m  chaz-pkg\033[0m — NixOS packages\n'
+        printf '  1) search   2) install   3) remove   4) list   5) upgrade   q) quit\n'
+        printf '> '
+        read -r choice || break
+        case "$choice" in
+            1) printf 'search term: '; read -r t; [ -n "$t" ] && nix search nixpkgs "$t" ;;
+            2) printf 'package: ';     read -r p; [ -n "$p" ] && nix profile install "nixpkgs#$p" ;;
+            3) printf 'package: ';     read -r p; [ -n "$p" ] && nix profile remove "$p" ;;
+            4) nix profile list ;;
+            5) nix profile upgrade '.*' ;;
+            q|Q|"") break ;;
+            *) echo "pick 1-5 or q" ;;
+        esac
+    done
+}
+
+cmd="${1:-menu}"
+[ $# -gt 0 ] && shift
+case "$cmd" in
+    i|install)  [ $# -gt 0 ] && nix profile install "nixpkgs#$1" || echo "usage: chaz-pkg install <pkg>" ;;
+    s|search)   [ $# -gt 0 ] && nix search nixpkgs "$*" || echo "usage: chaz-pkg search <term>" ;;
+    rm|remove)  [ $# -gt 0 ] && nix profile remove "$1" || echo "usage: chaz-pkg remove <pkg>" ;;
+    ls|list)    nix profile list ;;
+    up|upgrade) nix profile upgrade '.*' ;;
+    menu)       menu ;;
+    *)          echo "chaz-pkg: unknown command '$cmd' (try: search install remove list upgrade)" ;;
+esac

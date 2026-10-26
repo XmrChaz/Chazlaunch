@@ -1,5 +1,10 @@
 # Chazlaunch widgets (OWL)
 
+The home screen is `desktop.owl` — a dark, monospace "dev rice" desktop with a
+status bar, app cards and a dock (the dock's ⬇ opens `chaz-pkg`, the Nix
+package manager, and ⚙ opens Options). `clock.owl` and `drawer.owl` are smaller
+examples.
+
 Widgets are written in **OWL**, the on-device declarative widget language from
 [OmaLauncher](https://github.com/SimonSchubert/omalauncher) (`owl/`, MIT © 2026
 Simon Schubert and contributors). Chazlaunch ships an independent,
@@ -41,8 +46,14 @@ widget "name" {
   [persist]`, `let`.
 - **Nodes:** `Column`, `Row`, `Box`, `Grid`/`Flow` (stacked), `Text`, `Button`,
   `Progress`, `Spacer`; `for x in list { }`; `if cond { } else { }`.
-- **Props:** `text`, `style` (`title`/`muted`/`accent`), `color`, `background`,
-  `radius`, `padding`, `width`, `height`, `size`, `fill`, `value` (Progress).
+- **Layout props:** `grow` (fill the screen), `fill` (fill width), `weight`
+  (share of a Row/Column), `align` (`center`/`end`/`top`/`bottom`), `spacing`,
+  `padding`, `width`, `height`, `size`.
+- **Style props:** `color`, `background`, `radius`, `style`
+  (`title`/`muted`/`accent`), `mono` (monospace), `fontSize`, `bold`, `value`
+  (Progress). Colors are theme tokens (`accent`, `foreground`, `muted`,
+  `surface`, `red`/`green`/`blue`…) **or hex** like `#5EE6C5`.
+- **`onTap` works on any node** (cards, rows, boxes), not just `Button`.
 - **Expressions:** `"${…}"` interpolation, `+ - * /`, comparisons, `&& || !`,
   `??`, calls `upper/lower/len`, member access (`app.name`, `clock.date`).
 - **Actions (handlers):** assignment (`x = x + 1`), `run("cmd")`,
