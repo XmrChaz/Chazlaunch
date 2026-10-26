@@ -30,6 +30,11 @@ android {
         val rootfsUrl = (project.findProperty("chazRootfsUrl") as String?).orEmpty()
         buildConfigField("String", "ROOTFS_URL", "\"$rootfsUrl\"")
 
+        // Optional nested full-desktop session (-PchazSession=hyprland|sway|labwc).
+        // "none" = the default per-window-as-task model only.
+        val session = (project.findProperty("chazSession") as String?)?.ifBlank { "none" } ?: "none"
+        buildConfigField("String", "SESSION", "\"$session\"")
+
         ndk {
             // The Wayland compositor is native and only ships for 64-bit ARM,
             // which is what NixOS-aarch64 under PRoot targets anyway.

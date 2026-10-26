@@ -23,6 +23,10 @@ on:
         description: "Skip the (slow) rootfs build — use when the tarball is already attached to the release"
         required: false
         default: "false"
+      session:
+        description: "Nested desktop session variant to bake in (none|hyprland|sway|labwc)"
+        required: false
+        default: "none"
 
 permissions:
   contents: write
@@ -130,14 +134,20 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build compositor-enabled debug APK
+        env:
+          SESSION: ${{ github.event.inputs.session || 'none' }}
         run: |
           export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
           ROOTFS_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/nixos-aarch64-rootfs.tar.gz"
           ./gradlew assembleDebug \
             -Pchaz.native=true \
             -PchazRootfsUrl="$ROOTFS_URL" \
+            -PchazSession="$SESSION" \
             --stacktrace
-          mv app/build/outputs/apk/debug/app-debug.apk chazlaunch-${TAG}.apk
+          name="chazlaunch-${TAG}.apk"
+          [ "$SESSION" != "none" ] && name="chazlaunch-${SESSION}-${TAG}.apk"
+          mv app/build/outputs/apk/debug/app-debug.apk "$name"
+          echo "APK_NAME=$name" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
         with:

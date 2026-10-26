@@ -1,0 +1,44 @@
+#!/bin/sh
+# chaz-session — launch a nested full-desktop Wayland session (Hyprland / Sway /
+# labwc) as a single Android task, connected to the Chazlaunch compositor.
+#
+# Unlike the default model (each Linux window = its own Android task), a session
+# paints a whole tiling desktop into ONE surface. It is installed on demand via
+# Nix. There is no GPU under rootless PRoot, so it runs on software rendering
+# (wlroots pixman backend) — fine for Sway/labwc, heavier for Hyprland.
+#
+#   chaz-session sway | hyprland | labwc
+set -u
+
+wm="${1:-$(cat /root/.config/chaz-wm 2>/dev/null || echo sway)}"
+
+export NIX_CONFIG="experimental-features = nix-command flakes"
+export PATH="/root/.nix-profile/bin:/run/current-system/sw/bin:/root/.local/bin:$PATH"
+export XDG_RUNTIME_DIR=/run/user/0
+export WAYLAND_DISPLAY=wayland-0
+export XDG_SESSION_TYPE=wayland
+# wlroots: nest on the parent Wayland (our compositor), software-render.
+export WLR_BACKENDS=wayland
+export WLR_RENDERER=pixman
+export WLR_NO_HARDWARE_CURSORS=1
+export LIBGL_ALWAYS_SOFTWARE=1
+
+# Map friendly name -> nixpkgs attr + binary.
+case "$wm" in
+    hyprland|Hyprland) pkg="hyprland"; bin="Hyprland" ;;
+    sway)              pkg="sway";     bin="sway" ;;
+    labwc)             pkg="labwc";    bin="labwc" ;;
+    *)                 pkg="$wm";      bin="$wm" ;;
+esac
+
+if ! command -v "$bin" >/dev/null 2>&1; then
+    echo "[chaz-session] installing $pkg …"
+    nix profile install "nixpkgs#$pkg" || { echo "[chaz-session] install failed"; exit 1; }
+fi
+
+echo "[chaz-session] starting $bin (nested, software-rendered)…"
+if command -v dbus-run-session >/dev/null 2>&1; then
+    exec dbus-run-session "$bin"
+else
+    exec "$bin"
+fi

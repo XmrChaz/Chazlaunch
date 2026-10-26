@@ -20,6 +20,22 @@ The APK is baked (`-PchazRootfsUrl=…`) to download the rootfs asset from that
 same release on first launch, so **install the APK, open it, and run the setup
 wizard** — it fetches the rootfs, bootstraps Nix and installs the agents.
 
+## Desktop-session variants
+
+Dispatch with a `session` input (`hyprland` / `sway` / `labwc`) to bake in a
+nested full-desktop launcher. The APK is named `chazlaunch-<session>-<tag>.apk`
+and attached to the same release (it reuses the shared rootfs). On device a
+"Desktop (<wm>)" entry appears; it installs the WM via Nix on first use and
+runs it nested as a single Android task (software-rendered — no GPU under
+PRoot). `session=none` (default) is the per-window-as-task model only.
+
+```sh
+# Build all three test variants onto the v0.1.0 release:
+gh workflow run release.yml -f tag=v0.1.0 -f skip_rootfs=true -f session=hyprland
+gh workflow run release.yml -f tag=v0.1.0 -f skip_rootfs=true -f session=sway
+gh workflow run release.yml -f tag=v0.1.0 -f skip_rootfs=true -f session=labwc
+```
+
 ## Jobs
 
 | Job | Does | Key tooling |

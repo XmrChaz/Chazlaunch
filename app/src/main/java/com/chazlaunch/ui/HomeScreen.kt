@@ -29,6 +29,16 @@ fun HomeScreen(vm: MainViewModel, onOpenOptions: () -> Unit) {
         buildList {
             add(mapOf("name" to "Terminal", "icon" to "▸", "command" to "foot"))
             add(mapOf("name" to "Package manager", "icon" to "⬇", "command" to "foot -e /root/.local/bin/chaz-pkg"))
+            // Session variants (-PchazSession=hyprland|sway|labwc) add a nested
+            // full-desktop launcher that opens as a single Android task.
+            val session = com.chazlaunch.BuildConfig.SESSION
+            if (session != "none") {
+                add(mapOf(
+                    "name" to "Desktop (${session.replaceFirstChar { it.uppercase() }})",
+                    "icon" to "◳",
+                    "command" to "/root/.local/bin/chaz-session $session",
+                ))
+            }
             vm.agents
                 .filter { it.id in Prefs.installedAgents }
                 .forEach { add(mapOf("name" to it.displayName, "icon" to "🤖", "command" to "foot -e ${it.binary}")) }
