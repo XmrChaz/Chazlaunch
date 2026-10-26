@@ -29,8 +29,6 @@
   nix.settings = {
     sandbox = lib.mkForce false;
     experimental-features = [ "nix-command" "flakes" ];
-    # Keep the churny download/build cache where SdCardManager binds it.
-    max-jobs = lib.mkDefault "auto";
     cores = 0;
   };
   nix.channel.enable = true;
@@ -48,10 +46,8 @@
   swapDevices = lib.mkForce [ ];
   zramSwap.enable = lib.mkForce false;
 
-  # No real hardware clock, firewall or udev under PRoot.
-  services.udev.enable = lib.mkForce false;
+  # No real firewall under PRoot (there is no netfilter to program).
   networking.firewall.enable = lib.mkForce false;
-  time.hardwareClockInLocalTime = lib.mkForce false;
 
   # DNS that works inside the guest (Android's resolver isn't visible).
   networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
@@ -60,8 +56,6 @@
     nameserver 8.8.8.8
   '';
 
-  # Smaller closure: no X, we are Wayland-only against the Chazlaunch compositor.
-  environment.noXlibs = lib.mkDefault false; # some GUI apps still want libX11
   fonts.fontDir.enable = true;
 
   system.stateVersion = lib.mkDefault "24.11";

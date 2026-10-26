@@ -35,6 +35,8 @@ struct chaz_surface {
     bool has_damage;
 };
 
+struct chaz_server;  /* forward decl: referenced by chaz_task below */
+
 /* A unit of work marshalled onto the compositor (event-loop) thread. */
 struct chaz_task {
     struct wl_list link;

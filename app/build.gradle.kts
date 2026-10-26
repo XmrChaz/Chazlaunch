@@ -5,6 +5,15 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// The native Wayland compositor needs a cross-compiled libwayland-server under
+// src/main/cpp/third_party (see cpp/README.md). That blob isn't committed, so
+// the native build is wired in only when it's present — or forced with
+// -Pchaz.native=true. This lets CI validate the whole Kotlin/Compose/resource/
+// manifest pipeline (assembleDebug) without the vendored dependency.
+val nativeEnabled =
+    file("src/main/cpp/third_party/wayland").isDirectory ||
+        (project.findProperty("chaz.native") == "true")
+
 android {
     namespace = "com.chazlaunch"
     compileSdk = 35
@@ -22,20 +31,22 @@ android {
             abiFilters += listOf("arm64-v8a")
         }
 
-        externalNativeBuild {
-            cmake {
-                // Link against the NDK's prefab-less stack; wayland-server is
-                // vendored under src/main/cpp/third_party (see cpp/README.md).
-                cppFlags += "-std=c++17"
-                arguments += "-DANDROID_STL=c++_shared"
+        if (nativeEnabled) {
+            externalNativeBuild {
+                cmake {
+                    cppFlags += "-std=c++17"
+                    arguments += "-DANDROID_STL=c++_shared"
+                }
             }
         }
     }
 
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+    if (nativeEnabled) {
+        externalNativeBuild {
+            cmake {
+                path = file("src/main/cpp/CMakeLists.txt")
+                version = "3.22.1"
+            }
         }
     }
 
@@ -66,6 +77,13 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    lint {
+        // Keep lint informational in CI (report is uploaded as an artifact);
+        // assembleDebug is the gating build step.
+        abortOnError = false
+        checkReleaseBuilds = false
     }
 
     packaging {

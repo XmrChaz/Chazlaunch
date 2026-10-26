@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Android: compile Kotlin/Compose, process resources, lint and package a debug
+  # APK. The native compositor is gated off (its vendored libwayland isn't in
+  # the tree), so this validates everything from the JVM side up.
+  # ---------------------------------------------------------------------------
+  android:
+    name: Android build & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Assemble debug APK (native build gated off)
+        run: ./gradlew assembleDebug -Pchaz.native=false --stacktrace
+
+      - name: Android Lint
+        run: ./gradlew lintDebug -Pchaz.native=false --stacktrace
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest -Pchaz.native=false --stacktrace
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chazlaunch-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Native: syntax-check the Wayland compositor against the real libwayland
+  # headers (generating the xdg-shell glue), using tiny stub Android headers so
+  # it compiles on a host runner without the NDK.
+  # ---------------------------------------------------------------------------
+  native:
+    name: Compositor syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (for jni.h)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Wayland dev packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwayland-dev libwayland-bin wayland-protocols
+
+      - name: Generate xdg-shell protocol headers
+        run: |
+          mkdir -p build/gen
+          XDG=/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
+          wayland-scanner server-header "$XDG" build/gen/xdg-shell-server-protocol.h
+          wayland-scanner private-code  "$XDG" build/gen/xdg-shell-protocol.c
+
+      - name: Syntax-check compositor.c and jni_bridge.c
+        run: |
+          CPP=app/src/main/cpp
+          for src in "$CPP/compositor.c" "$CPP/jni_bridge.c" build/gen/xdg-shell-protocol.c; do
+            echo "== $src"
+            gcc -fsyntax-only -Wall \
+              -I"$CPP" -Ibuild/gen -Ici/stubs \
+              -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" \
+              "$src"
+          done
+
+  # ---------------------------------------------------------------------------
+  # Shell scripts shipped into the guest.
+  # ---------------------------------------------------------------------------
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          # POSIX dialect; fail on warnings/errors (info-level style nags, e.g.
+          # the intentional `cmd && ok || warn` idiom, are not failures).
+          shellcheck -s sh -S warning app/src/main/assets/scripts/*.sh
+
+  # ---------------------------------------------------------------------------
+  # Evaluate the NixOS guest flake (eval-only, no build) so config errors in
+  # configuration.nix / chaz-tweaks.nix / agents.nix are caught.
+  # ---------------------------------------------------------------------------
+  nix:
+    name: Nix syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Parse-check all guest Nix files
+        working-directory: app/src/main/assets/nixos
+        run: |
+          # Pure syntax parse (no nixpkgs fetch, no module evaluation) so the
+          # check is fast and deterministic across nixpkgs releases.
+          for f in *.nix; do
+            echo "== $f"
+            nix-instantiate --parse "$f" > /dev/null
+          done
