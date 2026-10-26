@@ -47,6 +47,11 @@ meson setup wl-host "wayland-${WAYLAND_VERSION}" \
 ninja -C wl-host
 ninja -C wl-host install
 cp "$HOSTPREFIX/bin/wayland-scanner" "$OUT/host-tools/wayland-scanner"
+# Put wayland-scanner.pc on the build machine's DEFAULT pkg-config path so the
+# arm64 build's native:true wayland-scanner dependency resolves without any
+# PKG_CONFIG_LIBDIR (which meson leaks to the build pkg-config and which would
+# hide the default dirs). The .pc references $HOSTPREFIX/bin by absolute path.
+sudo cp "$HOSTPREFIX/lib/pkgconfig/wayland-scanner.pc" /usr/lib/x86_64-linux-gnu/pkgconfig/
 
 # From here on everything is a cross build for arm64.
 export CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
@@ -77,12 +82,11 @@ endian = 'little'
 needs_exe_wrapper = true
 EOF
 
-# Host (arm64) pkg-config sees ONLY our cross libffi. The build machine's
-# pkg-config (for the native wayland-scanner, which needs expat) keeps the
-# system paths plus the host-scanner prefix. Keeping these separate is what
-# stops PKG_CONFIG_LIBDIR from hiding the build machine's expat.
-export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
-export PKG_CONFIG_LIBDIR_FOR_BUILD="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:$HOSTPREFIX/lib/pkgconfig:$HOSTPREFIX/share/pkgconfig"
+# ADDITIVE path only (never PKG_CONFIG_LIBDIR, which meson 1.3 leaks to the
+# build pkg-config and which would hide the system default dirs). Our arm64
+# libffi.pc is searched before the system dirs, and the native wayland-scanner
+# dep resolves from the .pc we copied into /usr/lib/x86_64-linux-gnu/pkgconfig.
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
 # scanner=false: don't compile the scanner here (that would drag in expat as a
 # host dep under cross). The internal wayland-scanner dependency is native:true,
 # so it resolves to the host scanner we installed in step 1 via the
