@@ -82,11 +82,14 @@ EOF
 export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
 export PKG_CONFIG_PATH_FOR_BUILD="$HOSTPREFIX/lib/pkgconfig:$HOSTPREFIX/share/pkgconfig"
+# scanner=true: in a cross build meson compiles wayland-scanner as a native
+# (build-machine) tool and uses it to generate the target protocol code, which
+# satisfies the internal wayland-scanner dependency without an external one.
 meson setup wl-arm64 "wayland-${WAYLAND_VERSION}" \
     --cross-file cross-arm64.ini \
     --prefix="$PREFIX" \
     --default-library=static \
-    -Dscanner=false -Dlibraries=true -Ddocumentation=false -Dtests=false -Ddtd_validation=false
+    -Dscanner=true -Dlibraries=true -Ddocumentation=false -Dtests=false -Ddtd_validation=false
 ninja -C wl-arm64
 ninja -C wl-arm64 install
 
