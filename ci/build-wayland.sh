@@ -42,7 +42,7 @@ cd "$WORK"
 curl -fsSL "https://gitlab.freedesktop.org/wayland/wayland/-/releases/${WAYLAND_VERSION}/downloads/wayland-${WAYLAND_VERSION}.tar.xz" -o wayland.tar.xz
 tar xf wayland.tar.xz
 meson setup wl-host "wayland-${WAYLAND_VERSION}" \
-    --prefix="$HOSTPREFIX" \
+    --prefix="$HOSTPREFIX" --libdir=lib \
     -Dscanner=true -Dlibraries=false -Ddocumentation=false -Dtests=false -Ddtd_validation=false
 ninja -C wl-host
 ninja -C wl-host install
@@ -83,14 +83,15 @@ EOF
 # stops PKG_CONFIG_LIBDIR from hiding the build machine's expat.
 export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
 export PKG_CONFIG_LIBDIR_FOR_BUILD="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:$HOSTPREFIX/lib/pkgconfig:$HOSTPREFIX/share/pkgconfig"
-# scanner=true: in a cross build meson compiles wayland-scanner as a native
-# (build-machine) tool and uses it to generate the target protocol code, which
-# satisfies the internal wayland-scanner dependency without an external one.
+# scanner=false: don't compile the scanner here (that would drag in expat as a
+# host dep under cross). The internal wayland-scanner dependency is native:true,
+# so it resolves to the host scanner we installed in step 1 via the
+# build-machine pkg-config path (PKG_CONFIG_LIBDIR_FOR_BUILD -> $HOSTPREFIX).
 meson setup wl-arm64 "wayland-${WAYLAND_VERSION}" \
     --cross-file cross-arm64.ini \
     --prefix="$PREFIX" \
     --default-library=static \
-    -Dscanner=true -Dlibraries=true -Ddocumentation=false -Dtests=false -Ddtd_validation=false
+    -Dscanner=false -Dlibraries=true -Ddocumentation=false -Dtests=false -Ddtd_validation=false
 ninja -C wl-arm64
 ninja -C wl-arm64 install
 
