@@ -16,8 +16,9 @@ HOST_TAG="linux-x86_64"
 TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/$HOST_TAG"
 WORK="$(mktemp -d)"
 OUT="$PWD/app/src/main/cpp/third_party"
-PREFIX="$WORK/prefix"       # cross sysroot-ish install prefix (arm64)
-mkdir -p "$PREFIX" "$OUT/host-tools" "$OUT/wayland/$ABI"
+PREFIX="$WORK/prefix"            # cross install prefix (arm64)
+HOSTPREFIX="$WORK/host-prefix"   # host install prefix (wayland-scanner)
+mkdir -p "$PREFIX" "$HOSTPREFIX" "$OUT/host-tools" "$OUT/wayland/$ABI"
 
 export PATH="$TOOLCHAIN/bin:$PATH"
 # NOTE: do NOT export the cross CC/AR/... yet — step 1 builds the *host*
@@ -35,12 +36,17 @@ WLP_VERSION="${WAYLAND_PROTOCOLS_VERSION:-1.38}"
 cd "$WORK"
 
 # --- 1. host wayland-scanner (needs expat) --------------------------------
+# Install it to a prefix so its wayland-scanner.pc is available; the arm64
+# build below resolves `dependency('wayland-scanner', native: true)` through
+# the build-machine pkg-config path (PKG_CONFIG_PATH_FOR_BUILD).
 curl -fsSL "https://gitlab.freedesktop.org/wayland/wayland/-/releases/${WAYLAND_VERSION}/downloads/wayland-${WAYLAND_VERSION}.tar.xz" -o wayland.tar.xz
 tar xf wayland.tar.xz
 meson setup wl-host "wayland-${WAYLAND_VERSION}" \
+    --prefix="$HOSTPREFIX" \
     -Dscanner=true -Dlibraries=false -Ddocumentation=false -Dtests=false -Ddtd_validation=false
 ninja -C wl-host
-cp wl-host/src/wayland-scanner "$OUT/host-tools/wayland-scanner"
+ninja -C wl-host install
+cp "$HOSTPREFIX/bin/wayland-scanner" "$OUT/host-tools/wayland-scanner"
 
 # From here on everything is a cross build for arm64.
 export CC="$CROSS_CC" AR="$CROSS_AR" RANLIB="$CROSS_RANLIB" STRIP="$CROSS_STRIP"
@@ -71,8 +77,11 @@ endian = 'little'
 needs_exe_wrapper = true
 EOF
 
+# Target deps (libffi) resolve via PKG_CONFIG_LIBDIR; the native wayland-scanner
+# dep resolves via the build-machine path.
 export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+export PKG_CONFIG_PATH_FOR_BUILD="$HOSTPREFIX/lib/pkgconfig:$HOSTPREFIX/share/pkgconfig"
 meson setup wl-arm64 "wayland-${WAYLAND_VERSION}" \
     --cross-file cross-arm64.ini \
     --prefix="$PREFIX" \

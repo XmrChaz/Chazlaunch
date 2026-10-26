@@ -20,8 +20,10 @@
     # Go (some agents ship as Go installers)
     go
 
-    # Agents available directly from nixpkgs
-    crush          # charmbracelet coding agent
+    # Agents available directly from this channel's nixpkgs.
+    # NOTE: crush (charmbracelet) isn't in nixpkgs 24.11, so it is NOT a system
+    # package here; it's installed at runtime via the app's agent flow
+    # (nix profile install nixpkgs#crush against the live registry).
     oh-my-posh     # "omp"
 
     # Common build deps for native npm/pip modules
