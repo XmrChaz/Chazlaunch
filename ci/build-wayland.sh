@@ -77,11 +77,12 @@ endian = 'little'
 needs_exe_wrapper = true
 EOF
 
-# Target deps (libffi) resolve via PKG_CONFIG_LIBDIR; the native wayland-scanner
-# dep resolves via the build-machine path.
+# Host (arm64) pkg-config sees ONLY our cross libffi. The build machine's
+# pkg-config (for the native wayland-scanner, which needs expat) keeps the
+# system paths plus the host-scanner prefix. Keeping these separate is what
+# stops PKG_CONFIG_LIBDIR from hiding the build machine's expat.
 export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
-export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
-export PKG_CONFIG_PATH_FOR_BUILD="$HOSTPREFIX/lib/pkgconfig:$HOSTPREFIX/share/pkgconfig"
+export PKG_CONFIG_LIBDIR_FOR_BUILD="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig:$HOSTPREFIX/lib/pkgconfig:$HOSTPREFIX/share/pkgconfig"
 # scanner=true: in a cross build meson compiles wayland-scanner as a native
 # (build-machine) tool and uses it to generate the target protocol code, which
 # satisfies the internal wayland-scanner dependency without an external one.
