@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Fetch the NixOS rootfs, Nix channels and agent installers over the network. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- The PRoot guest keeps running (dbus, pipewire, a login shell) while the
+         user is in another Linux window, so we hold a foreground service. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Large rootfs + Nix store downloads; let the installer survive Doze. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        tools:ignore="BatteryLife" />
+
+    <application
+        android:name=".ChazApp"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:largeHeap="true"
+        android:hardwareAccelerated="true"
+        android:extractNativeLibs="true"
+        android:theme="@style/Theme.Chazlaunch">
+
+        <!-- ================= Launcher / Home ================= -->
+        <!-- MainActivity is the HOME screen. Declaring CATEGORY_HOME makes
+             Chazlaunch selectable as the device's default launcher, so the
+             whole NixOS desktop takes over the device. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|density|uiMode"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ============ One Recents task per Linux window ============ -->
+        <!-- Each mapped xdg_toplevel from the Wayland compositor is surfaced as
+             a fresh instance of this activity. documentLaunchMode="always"
+             plus FLAG_ACTIVITY_MULTIPLE_TASK (set at launch time) gives every
+             Linux window its own entry in the Android Recents switcher, so they
+             behave like native Android tasks. -->
+        <activity
+            android:name=".window.WaylandWindowActivity"
+            android:exported="false"
+            android:process=":guest"
+            android:launchMode="standard"
+            android:documentLaunchMode="always"
+            android:autoRemoveFromRecents="false"
+            android:resizeableActivity="true"
+            android:excludeFromRecents="false"
+            android:taskAffinity="com.chazlaunch.window"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|density|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Chazlaunch.Window" />
+
+        <!-- ================= Guest + compositor runtime ================= -->
+        <!-- Hosts the native Wayland compositor event loop and the long-lived
+             PRoot session. Runs in its own process so a guest crash never takes
+             the launcher UI down with it. -->
+        <service
+            android:name=".compositor.CompositorService"
+            android:exported="false"
+            android:process=":guest"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Runs the NixOS PRoot guest and its Wayland compositor" />
+        </service>
+
+        <!-- First-launch / background install work (rootfs extraction, nix
+             bootstrap, agent installs) driven by WorkManager. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge" />
+
+    </application>
+</manifest>

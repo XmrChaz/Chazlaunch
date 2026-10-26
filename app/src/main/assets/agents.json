@@ -1,0 +1,147 @@
+[
+  {
+    "id": "claude",
+    "name": "Claude Code",
+    "description": "Anthropic's agentic coding CLI.",
+    "method": "npm",
+    "package": "@anthropic-ai/claude-code",
+    "bin": "claude",
+    "default": true
+  },
+  {
+    "id": "opencode",
+    "name": "opencode",
+    "description": "SST's open-source terminal coding agent.",
+    "method": "curl",
+    "package": "https://opencode.ai/install",
+    "bin": "opencode",
+    "default": true
+  },
+  {
+    "id": "codex",
+    "name": "OpenAI Codex",
+    "description": "OpenAI's Codex command-line agent.",
+    "method": "npm",
+    "package": "@openai/codex",
+    "bin": "codex",
+    "default": true
+  },
+  {
+    "id": "grok",
+    "name": "Grok CLI",
+    "description": "xAI Grok terminal agent (official package).",
+    "method": "npm",
+    "package": "@xai-official/grok",
+    "bin": "grok",
+    "default": true
+  },
+  {
+    "id": "copilot",
+    "name": "GitHub Copilot CLI",
+    "description": "GitHub Copilot in the terminal.",
+    "method": "npm",
+    "package": "@github/copilot",
+    "bin": "copilot",
+    "default": true,
+    "command": "npm_config_ignore_scripts=false npm install -g @github/copilot"
+  },
+  {
+    "id": "crush",
+    "name": "Crush",
+    "description": "Charmbracelet's glamourous coding agent.",
+    "method": "nix",
+    "package": "crush",
+    "bin": "crush",
+    "default": true
+  },
+  {
+    "id": "cursor-agent",
+    "name": "Cursor Agent",
+    "description": "Cursor's headless CLI agent.",
+    "method": "curl",
+    "package": "https://cursor.com/install",
+    "bin": "cursor-agent",
+    "default": true
+  },
+  {
+    "id": "kimi",
+    "name": "Kimi Code",
+    "description": "Moonshot AI's Kimi Code CLI.",
+    "method": "npm",
+    "package": "@moonshot-ai/kimi-code",
+    "bin": "kimi",
+    "default": true
+  },
+  {
+    "id": "gemini",
+    "name": "Gemini CLI",
+    "description": "Google's Gemini command-line agent.",
+    "method": "npm",
+    "package": "@google/gemini-cli",
+    "bin": "gemini",
+    "default": false
+  },
+  {
+    "id": "aider",
+    "name": "Aider",
+    "description": "AI pair-programming in your terminal.",
+    "method": "pip",
+    "package": "aider-chat",
+    "bin": "aider",
+    "default": false
+  },
+  {
+    "id": "goose",
+    "name": "Goose",
+    "description": "Block's on-machine AI agent.",
+    "method": "curl",
+    "package": "https://github.com/block/goose/releases/download/stable/download_cli.sh",
+    "bin": "goose",
+    "default": false
+  },
+  {
+    "id": "agy",
+    "name": "agy",
+    "description": "Community agent CLI. Edit package/method if the name resolves differently for you.",
+    "method": "npm",
+    "package": "agy",
+    "bin": "agy",
+    "default": false
+  },
+  {
+    "id": "pi",
+    "name": "Pi",
+    "description": "pi.dev agent/package runner.",
+    "method": "curl",
+    "package": "https://pi.dev/install.sh",
+    "bin": "pi",
+    "default": false
+  },
+  {
+    "id": "omp",
+    "name": "Oh My Posh",
+    "description": "Prompt engine / 'omp' shell agent.",
+    "method": "nix",
+    "package": "oh-my-posh",
+    "bin": "oh-my-posh",
+    "default": false
+  },
+  {
+    "id": "ori",
+    "name": "ori",
+    "description": "Community agent CLI. Edit package/method to match the real source.",
+    "method": "npm",
+    "package": "ori",
+    "bin": "ori",
+    "default": false
+  },
+  {
+    "id": "muse",
+    "name": "muse",
+    "description": "Community agent CLI. Edit package/method to match the real source.",
+    "method": "npm",
+    "package": "muse-cli",
+    "bin": "muse",
+    "default": false
+  }
+]

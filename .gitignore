@@ -1,0 +1,35 @@
+# Android / Gradle
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# NDK / native build
+obj/
+jni/**/*.o
+
+# Keystores (never commit signing material)
+*.jks
+*.keystore
+keystore.properties
+
+# Downloaded rootfs / bootstrap blobs (fetched at build time, not tracked)
+app/src/main/assets/rootfs/*.tar.xz
+app/src/main/assets/rootfs/*.tar.zst
+app/src/main/jniLibs/**/proot
+app/src/main/jniLibs/**/libtalloc.so.2
+app/src/main/jniLibs/**/loader*
+
+# Misc
+*.log
+.kotlin/

@@ -1,0 +1,6 @@
+<resources>
+    <color name="chaz_bg">#0B0F14</color>
+    <color name="chaz_surface">#121821</color>
+    <color name="chaz_accent">#5EE6C5</color>
+    <color name="chaz_accent_dim">#2A7A68</color>
+</resources>
