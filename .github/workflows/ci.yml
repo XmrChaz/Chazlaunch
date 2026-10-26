@@ -33,6 +33,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Don't install the obsolete legacy "tools" package (removed from the
+          # SDK repo); AGP downloads the platform + build-tools it needs during
+          # the build, with licenses already accepted by this action.
+          packages: ""
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
