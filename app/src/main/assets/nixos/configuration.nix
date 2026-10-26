@@ -20,18 +20,14 @@
   };
   security.sudo.wheelNeedsPassword = false;
 
-  # Wayland session essentials + a couple of GUI apps for the launcher grid.
+  # Minimal Wayland-capable base. Keeps the rootfs small so the (qemu) build is
+  # tractable; GUI apps like Firefox are installed later via `nix profile`.
   environment.systemPackages = with pkgs; [
-    # terminals / shell
-    foot bashInteractive git curl wget openssh
-    # Wayland client libs & helpers (clients talk to the Chazlaunch compositor)
-    wayland wayland-utils libxkbcommon
-    # a few GUI apps to prove the window-per-task model
-    firefox
-    nautilus
-    gnome-text-editor
-    # fonts so GUI apps render text
-    dejavu_fonts noto-fonts
+    foot            # Wayland terminal (the launcher's default window)
+    bashInteractive
+    git curl        # needed by the agent installers
+    wayland libxkbcommon
+    dejavu_fonts    # one font so terminals/apps render text
   ];
 
   # D-Bus is needed by many GTK apps even without a full desktop.
