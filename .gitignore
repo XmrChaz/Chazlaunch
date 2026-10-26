@@ -26,8 +26,12 @@ keystore.properties
 # Downloaded rootfs / bootstrap blobs (fetched at build time, not tracked)
 app/src/main/assets/rootfs/*.tar.xz
 app/src/main/assets/rootfs/*.tar.zst
+dist/
+
+# Prebuilt native blobs produced by the release workflow (ci/*.sh) — never committed
+app/src/main/cpp/third_party/
+app/src/main/jniLibs/**/*.so
 app/src/main/jniLibs/**/proot
-app/src/main/jniLibs/**/libtalloc.so.2
 app/src/main/jniLibs/**/loader*
 
 # Misc

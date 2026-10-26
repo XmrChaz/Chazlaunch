@@ -75,7 +75,9 @@ object PRootManager {
 
         val env = buildList {
             add("PROOT_TMP_DIR=${File(runtimeDir, "proot-tmp").ensure().absolutePath}")
-            add("PROOT_LOADER=${prootLoader.absolutePath}")
+            // A static proot embeds + self-extracts its loader; only point at a
+            // separate loader when we actually shipped one.
+            if (prootLoader.exists()) add("PROOT_LOADER=${prootLoader.absolutePath}")
             add("HOME=/root")
             add("USER=root")
             add("TERM=xterm-256color")

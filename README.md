@@ -106,6 +106,17 @@ how the rootfs tarball is produced.
 > native binaries**; both are documented, with build commands, in the files
 > above. These are prebuilt blobs, deliberately not committed.
 
+### Functional release build
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which cross-compiles
+the native deps, builds the NixOS aarch64 rootfs, and publishes a
+compositor-enabled APK + the rootfs tarball to a GitHub Release. The APK is
+baked to fetch that rootfs on first launch. See **`docs/RELEASE.md`**.
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
 ## Layout
 
 | Path | What |

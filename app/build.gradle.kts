@@ -25,6 +25,11 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
+        // The release workflow passes the hosted rootfs tarball URL here
+        // (-PchazRootfsUrl=...); empty falls back to InstallManager's default.
+        val rootfsUrl = (project.findProperty("chazRootfsUrl") as String?).orEmpty()
+        buildConfigField("String", "ROOTFS_URL", "\"$rootfsUrl\"")
+
         ndk {
             // The Wayland compositor is native and only ships for 64-bit ARM,
             // which is what NixOS-aarch64 under PRoot targets anyway.

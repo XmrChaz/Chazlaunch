@@ -1,0 +1,145 @@
+name: Release (functional APK)
+
+# Produces a fully functional build:
+#   - natives: cross-compiled libwayland-server + a working arm64 proot
+#   - rootfs:  a NixOS aarch64 rootfs tarball (attached to the release)
+#   - apk:     the compositor-enabled debug APK, baked with the rootfs URL
+#
+# Trigger by pushing a tag (v1.2.3) or manually via workflow_dispatch.
+#
+# NOTE: this pipeline is heavy (NDK cross-build, qemu Nix build) and is meant
+# to be iterated on against real runners; the first tagged run is where any
+# upstream-version / packaging drift gets shaken out.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create/attach to (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  natives:
+    name: Build native deps (libwayland + proot)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build pkg-config autoconf automake \
+            libtool libexpat1-dev patchelf dpkg-dev file
+
+      - name: Build libwayland-server for arm64
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          ./ci/build-wayland.sh
+
+      - name: Fetch + patch arm64 proot
+        run: ./ci/fetch-proot.sh
+
+      - name: Bundle natives
+        run: |
+          tar -czf natives.tar.gz \
+            app/src/main/cpp/third_party \
+            app/src/main/jniLibs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: natives
+          path: natives.tar.gz
+
+  # ---------------------------------------------------------------------------
+  rootfs:
+    name: Build NixOS aarch64 rootfs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Register qemu-aarch64 (binfmt)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            extra-platforms = aarch64-linux
+
+      - name: Build + pack rootfs
+        run: ./ci/pack-rootfs.sh
+
+      - name: Attach rootfs to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          files: dist/nixos-aarch64-rootfs.tar.gz
+          fail_on_unmatched_files: true
+
+  # ---------------------------------------------------------------------------
+  apk:
+    name: Build functional APK
+    runs-on: ubuntu-latest
+    needs: [natives]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download natives
+        uses: actions/download-artifact@v4
+        with:
+          name: natives
+
+      - name: Unpack natives into the tree
+        run: tar -xzf natives.tar.gz
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ""
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build compositor-enabled debug APK
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          ROOTFS_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/nixos-aarch64-rootfs.tar.gz"
+          ./gradlew assembleDebug \
+            -Pchaz.native=true \
+            -PchazRootfsUrl="$ROOTFS_URL" \
+            --stacktrace
+          mv app/build/outputs/apk/debug/app-debug.apk chazlaunch-${TAG}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chazlaunch-apk
+          path: chazlaunch-*.apk
+
+      - name: Attach APK to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          files: chazlaunch-*.apk
+          fail_on_unmatched_files: true

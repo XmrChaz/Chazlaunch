@@ -61,8 +61,12 @@ class InstallManager(private val context: Context) {
         }
     }
 
+    /** Build-time URL (set by the release workflow) wins; else the fallback. */
+    private val rootfsUrl: String
+        get() = com.chazlaunch.BuildConfig.ROOTFS_URL.ifEmpty { ROOTFS_URL }
+
     private fun downloadAndExtractRootfs() {
-        val conn = (URL(ROOTFS_URL).openConnection() as HttpURLConnection).apply {
+        val conn = (URL(rootfsUrl).openConnection() as HttpURLConnection).apply {
             connectTimeout = 30_000
             readTimeout = 60_000
             instanceFollowRedirects = true
