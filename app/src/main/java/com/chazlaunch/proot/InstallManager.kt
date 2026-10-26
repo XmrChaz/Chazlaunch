@@ -45,9 +45,11 @@ class InstallManager(private val context: Context) {
             PRootManager.ensureExecutable()
             if (!Prefs.rootfsInstalled) {
                 downloadAndExtractRootfs()
-                writeNixConfig()
                 Prefs.rootfsInstalled = true
             }
+            // Always refresh the nix configs + guest helpers so fixes ship even
+            // on a re-run over an already-extracted rootfs.
+            writeNixConfig()
             if (!Prefs.nixBootstrapped) {
                 bootstrapNix()
                 Prefs.nixBootstrapped = true
