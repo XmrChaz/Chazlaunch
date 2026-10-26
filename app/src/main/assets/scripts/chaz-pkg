@@ -12,6 +12,11 @@ set -u
 
 export NIX_CONFIG="experimental-features = nix-command flakes"
 export PATH="/root/.nix-profile/bin:/run/current-system/sw/bin:/root/.local/bin:$PATH"
+export NIX_REMOTE=   # standalone (no daemon under PRoot)
+for c in /etc/ssl/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt \
+         "$(ls -1 /nix/store/*-nss-cacert-*/etc/ssl/certs/ca-bundle.crt 2>/dev/null | head -1)"; do
+    [ -n "$c" ] && [ -r "$c" ] && { export NIX_SSL_CERT_FILE="$c" SSL_CERT_FILE="$c"; break; }
+done
 
 menu() {
     while true; do

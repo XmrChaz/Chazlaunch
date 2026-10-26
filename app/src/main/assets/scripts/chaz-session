@@ -14,6 +14,11 @@ wm="${1:-$(cat /root/.config/chaz-wm 2>/dev/null || echo sway)}"
 
 export NIX_CONFIG="experimental-features = nix-command flakes"
 export PATH="/root/.nix-profile/bin:/run/current-system/sw/bin:/root/.local/bin:$PATH"
+export NIX_REMOTE=   # standalone (no daemon under PRoot)
+for c in /etc/ssl/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt \
+         "$(ls -1 /nix/store/*-nss-cacert-*/etc/ssl/certs/ca-bundle.crt 2>/dev/null | head -1)"; do
+    [ -n "$c" ] && [ -r "$c" ] && { export NIX_SSL_CERT_FILE="$c" SSL_CERT_FILE="$c"; break; }
+done
 export XDG_RUNTIME_DIR=/run/user/0
 export WAYLAND_DISPLAY=wayland-0
 export XDG_SESSION_TYPE=wayland
@@ -35,6 +40,46 @@ if ! command -v "$bin" >/dev/null 2>&1; then
     echo "[chaz-session] installing $pkg …"
     nix profile install "nixpkgs#$pkg" || { echo "[chaz-session] install failed"; exit 1; }
 fi
+
+# Seed a sensible default config so the nested desktop isn't blank and has
+# touch-friendly keybinds (Super = Mod4). A terminal autostarts on login.
+case "$wm" in
+    sway)
+        mkdir -p /root/.config/sway
+        if [ ! -f /root/.config/sway/config ]; then
+            cat > /root/.config/sway/config <<'EOF'
+# Chazlaunch default sway config
+set $mod Mod4
+set $term foot
+default_border pixel 2
+gaps inner 6
+exec $term
+bindsym $mod+Return exec $term
+bindsym $mod+d exec foot -e /root/.local/bin/chaz-pkg
+bindsym $mod+q kill
+bindsym $mod+e exit
+# Software cursor so it shows without a GPU.
+seat * hide_cursor when-typing enable
+EOF
+        fi
+        ;;
+    labwc)
+        mkdir -p /root/.config/labwc
+        [ -f /root/.config/labwc/autostart ] || printf 'foot &\n' > /root/.config/labwc/autostart
+        ;;
+    hyprland|Hyprland)
+        mkdir -p /root/.config/hypr
+        if [ ! -f /root/.config/hypr/hyprland.conf ]; then
+            cat > /root/.config/hypr/hyprland.conf <<'EOF'
+# Chazlaunch default Hyprland config (software rendering)
+exec-once = foot
+bind = SUPER, RETURN, exec, foot
+bind = SUPER, Q, killactive
+bind = SUPER, M, exit
+EOF
+        fi
+        ;;
+esac
 
 echo "[chaz-session] starting $bin (nested, software-rendered)…"
 if command -v dbus-run-session >/dev/null 2>&1; then

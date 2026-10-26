@@ -82,9 +82,15 @@ object PRootManager {
             add("USER=root")
             add("TERM=xterm-256color")
             add("LANG=C.UTF-8")
-            add("PATH=/run/current-system/sw/bin:/root/.nix-profile/bin:/usr/bin:/bin")
+            add("PATH=/run/current-system/sw/bin:/root/.nix-profile/bin:/root/.local/bin:/usr/bin:/bin")
             add("XDG_RUNTIME_DIR=/run/user/0")
             add("WAYLAND_DISPLAY=$waylandDisplay")
+            // There is no nix-daemon under PRoot (no systemd/PID1), so force
+            // standalone single-user nix — everything runs as root on the store.
+            add("NIX_REMOTE=")
+            // TLS roots for nix/curl downloads; scripts refine this if missing.
+            add("NIX_SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt")
+            add("SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt")
             // PRoot needs to know where ptrace is unavailable (Android ≥ 10 is fine
             // in app's own process); seccomp off so nix-daemon's syscalls pass.
             add("PROOT_NO_SECCOMP=1")

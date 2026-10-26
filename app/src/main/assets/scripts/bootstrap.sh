@@ -9,7 +9,25 @@ echo "[chaz] bootstrapping Nix guest…"
 export NIX_CONFIG="experimental-features = nix-command flakes
 sandbox = false"
 export HOME=/root
+export USER=root
+# No nix-daemon under PRoot — operate the store directly as root.
+export NIX_REMOTE=
+
+# Find a usable CA bundle for TLS (NixOS path first, then the nix store copy).
+for c in /etc/ssl/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt \
+         "$(ls -1 /nix/store/*-nss-cacert-*/etc/ssl/certs/ca-bundle.crt 2>/dev/null | head -1)"; do
+    if [ -n "$c" ] && [ -r "$c" ]; then NIX_SSL_CERT_FILE="$c"; break; fi
+done
 export NIX_SSL_CERT_FILE="${NIX_SSL_CERT_FILE:-/etc/ssl/certs/ca-bundle.crt}"
+export SSL_CERT_FILE="$NIX_SSL_CERT_FILE"
+
+# Nix needs its state/profile dirs to exist in standalone mode.
+mkdir -p /nix/var/nix/profiles/per-user/root /nix/var/nix/gcroots/per-user/root 2>/dev/null || true
+
+echo "[chaz] nix: $(command -v nix || echo MISSING)  NIX_REMOTE='${NIX_REMOTE}'  cert=$NIX_SSL_CERT_FILE"
+if ! command -v nix >/dev/null 2>&1; then
+    echo "[chaz] FATAL: nix not found in the rootfs PATH ($PATH)"; exit 1
+fi
 
 # DNS inside the guest.
 printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf 2>/dev/null || true
